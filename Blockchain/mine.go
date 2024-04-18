@@ -34,8 +34,6 @@ func MineBlock() {
 	if ProofOfWork(&Bh) {
 		file, _ := os.Create("output.txt")
 		defer file.Close()
-		// fmt.Println(Bh.merkleRoot)
-		// fmt.Println(Bh.nonce)
 		serializedBh := Utils.SerializeBlockHeader(&Bh)
 		segserialized, _ := Utils.SegWitSerialize(cbTx)
 		file.WriteString(hex.EncodeToString(serializedBh) + "\n")
