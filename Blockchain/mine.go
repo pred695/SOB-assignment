@@ -2,6 +2,7 @@ package Blockchain
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -19,13 +20,31 @@ var Bh Structs.BlockHeader = Structs.BlockHeader{
 	Nonce:         0,
 }
 
+func GetAllTxid() []string {
+	var permittedTxIDs []string
+	dir := "./mempool"
+	files, _ := os.ReadDir(dir)
+	for _, file := range files {
+		txData, err := Utils.JsonData(dir + "/" + file.Name())
+		Utils.Handle(err)
+		var tx Structs.Transaction
+		err = json.Unmarshal([]byte(txData), &tx)
+		serialized, _ := Utils.SerializeTransaction(&tx)
+		txID := Utils.ReverseBytes(Utils.To_sha(Utils.To_sha(serialized)))
+		permittedTxIDs = append(permittedTxIDs, hex.EncodeToString(txID))
+	}
+	return permittedTxIDs
+
+}
 func MineBlock() {
 	netReward, TxIDs, _ := Utils.Prioritize()
 
 	cbTx := Utils.CreateCoinbase(netReward)
 	serializedcbTx, _ := Utils.SerializeTransaction(cbTx)
 	fmt.Printf("CBTX: %x\n", serializedcbTx)
-	TxIDs = append([]string{hex.EncodeToString(Utils.ReverseBytes(Utils.To_sha(Utils.To_sha(serializedcbTx))))}, TxIDs...)
+	txidsnew := GetAllTxid()
+	fmt.Println("Length of txids: ", len(txidsnew))
+	TxIDs = append([]string{hex.EncodeToString(Utils.ReverseBytes(Utils.To_sha(Utils.To_sha(serializedcbTx))))}, GetAllTxid()...)
 	mkr := Utils.NewMerkleTree(TxIDs)
 	Bh.MerkleRoot = hex.EncodeToString(mkr.Data)
 	cbtxbase := Utils.CalculateBaseSize(cbTx)
